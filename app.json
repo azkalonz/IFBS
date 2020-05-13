@@ -1,12 +1,9 @@
 {
   "expo": {
     "name": "IFBS",
+    "sdkVersion": "37.0.0",
     "slug": "IFBS",
-    "platforms": [
-      "ios",
-      "android",
-      "web"
-    ],
+    "platforms": ["ios", "android", "web"],
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,13 +13,24 @@
       "backgroundColor": "#ffffff"
     },
     "updates": {
-      "fallbackToCacheTimeout": 0
+      "enabled": true,
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ifuel.ifbs",
+      "buildNumber": "1.0.0"
+    },
+    "android": {
+      "package": "ph.com.ifuel.ifbs",
+      "versionCode": 1,
+      "googleServicesFile": "./google-services.json"
+    },
+    "packagerOpts": {
+      "config": "metro.config.js",
+      "sourceExts": ["js", "jsx", "ts", "tsx", "svg"]
     }
   }
 }

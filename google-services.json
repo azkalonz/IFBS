@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "368174030354",
+    "firebase_url": "https://ifbs-d65c3.firebaseio.com",
+    "project_id": "ifbs-d65c3",
+    "storage_bucket": "ifbs-d65c3.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:368174030354:android:1f676074d12e38aa4b82cb",
+        "android_client_info": {
+          "package_name": "ph.com.ifuel.ifbs"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "368174030354-5ethcirlhi7ihjc8eej219ikm7hjm3rl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtSRe2XaENHUGYgiR8c1Grrp7yDJGPrqY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "368174030354-5ethcirlhi7ihjc8eej219ikm7hjm3rl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
