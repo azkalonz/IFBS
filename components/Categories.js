@@ -12,11 +12,11 @@ export default Categories = (props) => {
     >
       {props.items.map(
         (c, i) =>
-          c !== "App" && (
+          c.name !== "App" && (
             <View key={i}>
               <Divider />
-              <TouchableOpacity>
-                <List.Item title={c} titleStyle={{ fontWeight: "bold" }} />
+              <TouchableOpacity onPress={() => props.onPress(c)}>
+                <List.Item title={c.name} titleStyle={{ fontWeight: "bold" }} />
               </TouchableOpacity>
               <Divider />
             </View>

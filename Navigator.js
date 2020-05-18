@@ -7,7 +7,18 @@ import {
 } from "react-navigation-stack";
 import { createAppContainer, createSwitchNavigator } from "react-navigation";
 import { Login, Register } from "./screens/Auth";
-import { Shop, Cart, Product, Search, Checkout, Orders } from "./screens/Home";
+import {
+  Shop,
+  Cart,
+  Product,
+  Chat,
+  Search,
+  Billing,
+  Orders,
+  Receipt,
+  ProductsByStore,
+  Stores,
+} from "./screens/Home";
 import Header from "./screens/Home/Header";
 import BottomTabBar from "./screens/Home/BottomTabBar";
 import { createDrawerNavigator } from "react-navigation-drawer";
@@ -21,6 +32,16 @@ const popularStack = createStackNavigator(
     "Popular Products": {
       screen: Shop,
     },
+    Product: {
+      screen: (props) => <Product {...props} />,
+      navigationOptions: {
+        header: false,
+        ...TransitionPresets.SlideFromRightIOS,
+      },
+    },
+    ProductsByStore: {
+      screen: ProductsByStore,
+    },
   },
   {
     defaultNavigationOptions: {
@@ -31,7 +52,7 @@ const popularStack = createStackNavigator(
 );
 const mostRecentStack = createStackNavigator(
   {
-    "Most Recent": Shop,
+    Stores: Stores,
   },
   {
     defaultNavigationOptions: {
@@ -45,22 +66,23 @@ const shopTabs = createBottomTabNavigator(
       screen: popularStack,
       navigationOptions: {
         tabBarIcon: ({ focused, tintColor }) => (
-          <Icon5
-            name="store"
+          <Icon
+            name="shopping-cart"
             color={focused ? tintColor : "#e1e1e1"}
             size={25}
           />
         ),
+        tabBarLabel: "Shop",
       },
     },
-    "Most Recent": {
+    Stores: {
       screen: mostRecentStack,
       navigationOptions: {
         tabBarIcon: ({ focused, tintColor }) => (
-          <Icon
-            name="shopping-cart"
+          <Icon5
+            name="store"
             color={focused ? tintColor : "#e1e1e1"}
-            size={30}
+            size={20}
           />
         ),
       },
@@ -95,6 +117,13 @@ const mainStack = createStackNavigator(
         ...TransitionPresets.SlideFromRightIOS,
       },
     },
+    "Order Details": {
+      screen: Receipt,
+      navigationOptions: {
+        header: (props) => <DefaultHeader {...props} />,
+        ...TransitionPresets.SlideFromRightIOS,
+      },
+    },
     Orders: {
       screen: Orders,
       navigationOptions: {
@@ -102,15 +131,8 @@ const mainStack = createStackNavigator(
         ...TransitionPresets.ModalSlideFromBottomIOS,
       },
     },
-    Product: {
-      screen: (props) => <Product {...props} />,
-      navigationOptions: {
-        header: (props) => <DefaultHeader {...props} />,
-        ...TransitionPresets.ModalSlideFromBottomIOS,
-      },
-    },
-    Checkout: {
-      screen: (props) => <Checkout {...props} />,
+    "Contact Info": {
+      screen: (props) => <Billing {...props} />,
       navigationOptions: {
         header: (props) => <DefaultHeader {...props} />,
         ...TransitionPresets.ModalSlideFromBottomIOS,
@@ -118,6 +140,13 @@ const mainStack = createStackNavigator(
     },
     "My Account": {
       screen: shopTabs,
+    },
+    Chat: {
+      screen: Chat,
+      navigationOptions: {
+        header: (props) => <DefaultHeader {...props} />,
+        ...TransitionPresets.ModalSlideFromBottomIOS,
+      },
     },
     Search: {
       screen: Search,

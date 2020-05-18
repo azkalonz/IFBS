@@ -50,6 +50,8 @@ const options = {
 
 const Shop = (props) => {
   const scrollY = new Animated.Value(0);
+  const [page, setPage] = useState(2);
+  const [nomore, setNomore] = useState(false);
   const [buttons, setButtons] = useState(
     props.products.map((product) =>
       product.type === "simple"
@@ -64,6 +66,7 @@ const Shop = (props) => {
           }
         : {
             ...productsButtonConfig.variations,
+            width: new Animated.Value(20),
             options: {
               ...options,
               height: new Animated.Value(0),
@@ -73,36 +76,44 @@ const Shop = (props) => {
     )
   );
   const [refreshing, setRefreshing] = useState(false);
-
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    new WooCommerceApi(props.userInfo.jwt_token)
-      .get("products")
+    new WooCommerceApi(props.userInfo.jwt_token, "v2")
+      .get("products?per_page=20&page=" + page)
       .then((resp) => {
-        props.setProducts(resp.filter((p) => p.status === "publish"));
+        if (resp.length) {
+          let newProducts = props.products.concat(
+            resp.filter((p) => p.status === "publish")
+          );
+          props.setProducts(newProducts);
+          setButtons(
+            newProducts.map((product) =>
+              product.type === "simple"
+                ? {
+                    ...productsButtonConfig.simple,
+                    width: new Animated.Value(20),
+                    options: {
+                      ...options,
+                      height: new Animated.Value(0),
+                      width: new Animated.Value(0),
+                    },
+                  }
+                : {
+                    ...productsButtonConfig.variations,
+                    width: new Animated.Value(20),
+                    options: {
+                      ...options,
+                      height: new Animated.Value(0),
+                      width: new Animated.Value(0),
+                    },
+                  }
+            )
+          );
+          setPage(page + 1);
+        } else {
+          setNomore(true);
+        }
         setRefreshing(false);
-        setButtons(
-          props.products.map((product) =>
-            product.type === "simple"
-              ? {
-                  ...productsButtonConfig.simple,
-                  width: new Animated.Value(20),
-                  options: {
-                    ...options,
-                    height: new Animated.Value(0),
-                    width: new Animated.Value(0),
-                  },
-                }
-              : {
-                  ...productsButtonConfig.variations,
-                  options: {
-                    ...options,
-                    height: new Animated.Value(0),
-                    width: new Animated.Value(0),
-                  },
-                }
-          )
-        );
       });
   }, [refreshing]);
   const _animate = (from, to, d = 1200) =>
@@ -147,10 +158,17 @@ const Shop = (props) => {
     setButtons(b);
   };
   const productItem = (product, i) => {
+    const handleProduct = () => props.navigation.navigate("Product", product);
+    if (buttons[i] === undefined) return null;
+    let catImage = props.categories.filter(
+      (c) => c.name === product.categories[0].name
+    )[0];
+    catImage = catImage.image === null ? null : catImage.image.src;
     return (
       <Card
         style={{ width: "47%", margin: 5, position: "relative" }}
-        key={product.id}
+        key={i}
+        onPress={() => null}
       >
         <View
           style={{ position: "absolute", right: 0, top: 130, zIndex: 99999 }}
@@ -190,7 +208,7 @@ const Shop = (props) => {
             }}
           >
             <List.Item
-              title="Add to wishlist"
+              title="Add to favorites"
               titleStyle={{ fontSize: 15 }}
               style={{ padding: 0 }}
             />
@@ -211,6 +229,26 @@ const Shop = (props) => {
               </TouchableOpacity>
             ) : null}
           </Animated.View>
+        </View>
+        <View
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            zIndex: 2,
+            padding: 6,
+          }}
+        >
+          {catImage !== null ? (
+            <Image
+              resizeMethod="resize"
+              style={{ width: 30, height: 30 }}
+              resizeMode="contain"
+              source={{
+                uri: catImage,
+              }}
+            />
+          ) : null}
         </View>
         {product.sale_price.length ? (
           <View
@@ -233,10 +271,12 @@ const Shop = (props) => {
             </Text>
           </View>
         ) : null}
-        <Card.Cover
-          source={{ uri: product.images[0].src }}
-          style={{ height: 130 }}
-        />
+        <TouchableOpacity onPress={handleProduct}>
+          <Card.Cover
+            source={{ uri: product.images[0].src }}
+            style={{ height: 130 }}
+          />
+        </TouchableOpacity>
         <Card.Content
           style={{
             minHeight: 45,
@@ -251,9 +291,11 @@ const Shop = (props) => {
               marginTop: 6,
             }}
           >
-            <Text numberOfLines={2} style={{ fontSize: 16 }}>
-              {product.name}
-            </Text>
+            <TouchableOpacity onPress={handleProduct}>
+              <Text numberOfLines={2} style={{ fontSize: 16 }}>
+                {product.name}
+              </Text>
+            </TouchableOpacity>
           </View>
           <Text style={{ fontWeight: "bold", color: "#fda209" }}>
             P {product.price}
@@ -302,7 +344,7 @@ const Shop = (props) => {
                       color: "#fff",
                     }}
                   >
-                    {buttons[i].title === "Remove" ? "Checkout" : " "}
+                    {buttons[i].title === "Remove" ? "View Cart" : " "}
                   </Animated.Text>
                 </Animated.View>
               </TouchableOpacity>
@@ -338,15 +380,17 @@ const Shop = (props) => {
       snapToOffsets={[100]}
       snapToEnd={false}
       snapToStart={true}
-      onScroll={Animated.event([
-        {
-          nativeEvent: {
-            contentOffset: {
-              y: scrollY,
-            },
-          },
-        },
-      ])}
+      onScroll={(e) => {
+        scrollY.setValue(e.nativeEvent.contentOffset.y);
+        let paddingToBottom = 100;
+        paddingToBottom += e.nativeEvent.layoutMeasurement.height;
+        if (
+          e.nativeEvent.contentOffset.y >=
+          e.nativeEvent.contentSize.height - paddingToBottom
+        ) {
+          if (!nomore && !refreshing) onRefresh();
+        }
+      }}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
@@ -380,9 +424,15 @@ const Shop = (props) => {
             </Text>
           </LinearGradient>
         </Animated.View>
-        <Animated.View
+        <Animated.ScrollView
+          horizontal={true}
           style={{
             marginTop: -34,
+            borderRadius: scrollY.interpolate({
+              inputRange: [0, 90],
+              outputRange: [10, 0],
+              extrapolate: "clamp",
+            }),
             backgroundColor: "#fff",
             padding: scrollY.interpolate({
               inputRange: [0, 90],
@@ -404,7 +454,6 @@ const Shop = (props) => {
               },
             ],
             flexDirection: "row",
-            justifyContent: "space-between",
             shadowColor: "#000",
             shadowOffset: {
               width: 0,
@@ -415,63 +464,46 @@ const Shop = (props) => {
             elevation: 5,
           }}
         >
-          <Animated.View
-            style={{
-              padding: 10,
-              alignItems: "center",
-              transform: [
-                {
-                  scale: scrollY.interpolate({
-                    inputRange: [0, 60],
-                    outputRange: [1, 0.7],
-                    extrapolate: "clamp",
-                  }),
-                },
-              ],
-            }}
-          >
-            <Hamburger width={40} height={40} />
-            <Text>BBQ Break</Text>
-          </Animated.View>
-          <Animated.View
-            style={{
-              padding: 10,
-              alignItems: "center",
-              transform: [
-                {
-                  scale: scrollY.interpolate({
-                    inputRange: [0, 60],
-                    outputRange: [1, 0.7],
-                    extrapolate: "clamp",
-                  }),
-                },
-              ],
-            }}
-          >
-            <Hamburger width={40} height={40} />
-            <Text>Coffee Spot</Text>
-          </Animated.View>
-          <Animated.View
-            style={{
-              padding: 10,
-              alignItems: "center",
-              transform: [
-                {
-                  scale: scrollY.interpolate({
-                    inputRange: [0, 60],
-                    outputRange: [1, 0.7],
-                    extrapolate: "clamp",
-                  }),
-                },
-              ],
-            }}
-          >
-            <Hamburger width={40} height={40} />
-            <Text>Juice Station</Text>
-          </Animated.View>
-        </Animated.View>
+          {props.categories &&
+            props.categories
+              .filter((c) => c.name !== "App")
+              .map((c, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() =>
+                    props.navigation.navigate("ProductsByStore", c)
+                  }
+                >
+                  <Animated.View
+                    style={{
+                      padding: 10,
+                      alignItems: "center",
+                      transform: [
+                        {
+                          scale: scrollY.interpolate({
+                            inputRange: [0, 60],
+                            outputRange: [1, 0.7],
+                            extrapolate: "clamp",
+                          }),
+                        },
+                      ],
+                    }}
+                  >
+                    {c.image !== null ? (
+                      <Image
+                        resizeMethod="resize"
+                        source={{ uri: c.image.src }}
+                        style={{ width: 50, height: 50 }}
+                        resizeMode="contain"
+                      />
+                    ) : null}
+                    <Text>{c.name}</Text>
+                  </Animated.View>
+                </TouchableOpacity>
+              ))}
+        </Animated.ScrollView>
       </View>
-      <Animations
+      {/* <Animations
         name="fade"
         method="timing"
         from={new Animated.Value(0)}
@@ -516,7 +548,7 @@ const Shop = (props) => {
             </View>
           </ScrollView>
         </View>
-      </Animations>
+      </Animations> */}
       <Animations
         name="fade"
         method="timing"
@@ -524,7 +556,7 @@ const Shop = (props) => {
         to={1}
         duration={1000}
       >
-        <Title style={{ padding: 13 }}>Popular Products</Title>
+        <Title style={{ padding: 13 }}>Products</Title>
         <Animations
           name="slideY"
           method="timing"
@@ -556,6 +588,7 @@ const mapStateToProps = (state) => {
     cartItems: state.cartItems,
     userInfo: state.userInfo,
     products: state.products,
+    categories: state.categories,
   };
 };
 

@@ -24,6 +24,21 @@ const rootDispatch = (dispatch) => {
         payload: products,
       });
     },
+    addConvo: ({ order_id, messages }) =>
+      dispatch({
+        type: "ADD_CONVO",
+        order_id,
+        messages,
+      }),
+    setCategories: (cat) =>
+      dispatch({
+        type: "SET_CATEGORIES",
+        payload: cat,
+      }),
+    clearNotifications: () =>
+      dispatch({
+        type: "CLEAR_NOTIFICATION",
+      }),
     setQty: (id, qty) =>
       dispatch({
         type: "SET_QUANTITY",
@@ -42,10 +57,10 @@ const rootDispatch = (dispatch) => {
         id,
       });
     },
-    addToCart: (item) =>
+    addToCart: (item, qty = 1) =>
       dispatch({
         type: "ADD_TO_CART",
-        product: { ...item, qty: 1 },
+        product: { ...item, qty },
       }),
     setNotification: (notification) =>
       dispatch({

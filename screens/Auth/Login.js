@@ -28,6 +28,7 @@ import { SvgXml } from "react-native-svg";
 import backgrounds from "../../components/SvgBackgrounds";
 import axios from "axios";
 import firebase from "../../firebase";
+import CaravanLogo from "../../assets/CaravanLogo";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const SCREEN_HEIGHT = Dimensions.get("window").height;
@@ -80,9 +81,14 @@ const Login = (props) => {
       await AsyncStorage.setItem("@password", password);
       await AsyncStorage.setItem("@user", JSON.stringify(user));
       setStatus("Loading store...");
-      await new WooCommerceApi(token).get("products").then((resp) => {
-        props.setProducts(resp.filter((p) => p.status === "publish"));
-      });
+      await new WooCommerceApi(token, "v2")
+        .get("products?per_page=20&page=1")
+        .then((resp) => {
+          props.setProducts(resp.filter((p) => p.status === "publish"));
+        });
+      await new WooCommerceApi(token)
+        .get("products/categories")
+        .then((resp) => props.setCategories(resp));
       await props.setUserInfo({ ...user, jwt_token: token });
       navigation.navigate("app");
     } catch (error) {}
@@ -93,16 +99,6 @@ const Login = (props) => {
     if (username === undefined || password === undefined) return;
     setLoading(true);
     await WP.login(username.toLowerCase(), password).then(async (data) => {
-      await axios
-        .post(
-          "http://notifications.ifuel.com.ph/public/notificationtoken.php",
-          {
-            customer_id: data.id,
-            token: props.token,
-          }
-        )
-        .then((res) => console.log(res.data, token, data.id))
-        .catch((err) => alert(err));
       if (!data.token) {
         alert("Incorrect Username/Password", username, password);
         await AsyncStorage.removeItem("@token");
@@ -110,6 +106,16 @@ const Login = (props) => {
         await AsyncStorage.removeItem("@password");
         setAutologin(false);
       } else {
+        await axios
+          .post(
+            "http://notifications.ifuel.com.ph/public/notificationtoken.php",
+            {
+              customer_id: data.id,
+              token: props.token,
+            }
+          )
+          .then((res) => console.log(res.data, token, data.id))
+          .catch((err) => alert(err));
         await saveLoginInfo(username, password, data.token, data);
       }
     });
@@ -132,7 +138,7 @@ const Login = (props) => {
                 }}
               >
                 <Text
-                  style={{ fontWeight: "bold", color: "#fff", marginTop: 13 }}
+                  style={{ fontWeight: "bold", color: "#222", marginTop: 13 }}
                 >
                   {status}
                 </Text>
@@ -149,11 +155,45 @@ const Login = (props) => {
               to={0}
               duration={2000}
             >
-              <Image
-                style={{ height: "100%", width: "100%" }}
-                resizeMode="contain"
-                source={require("../../assets/login-logo.png")}
-              />
+              <View
+                style={{
+                  height: "100%",
+                  width: "100%",
+                  flexDirection: "column",
+                }}
+              >
+                <View style={{ height: "80%" }}>
+                  <CaravanLogo width="100%" height="100%" />
+                </View>
+                <View
+                  style={{
+                    height: "20%",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      flexDirection: "row",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Image
+                      style={{ height: "100%", width: 100 }}
+                      resizeMode="contain"
+                      source={require("../../assets/ifranchise.png")}
+                    />
+                    <Image
+                      style={{ height: "100%", width: 100 }}
+                      resizeMode="contain"
+                      source={require("../../assets/kitchen.png")}
+                    />
+                  </View>
+                </View>
+              </View>
             </Animations>
           )}
           {!loading && (
@@ -169,7 +209,9 @@ const Login = (props) => {
               <View>
                 <View
                   style={{
-                    backgroundColor: "rgba(255,255,255,0.8)",
+                    marginTop: 10,
+                    backgroundColor: "rgba(0,0,0,0.05)",
+                    overflow: "hidden",
                     padding: 30,
                     borderRadius: 30,
                   }}
@@ -236,6 +278,19 @@ const Login = (props) => {
                       Login
                     </Button>
                   </View>
+                  {/* <SvgXml
+                    style={{
+                      width: SCREEN_WIDTH,
+                      height: SCREEN_HEIGHT,
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      zIndex: -1,
+                    }}
+                    xml={backgrounds.tornado}
+                  /> */}
                 </View>
               </View>
               <View
@@ -247,7 +302,7 @@ const Login = (props) => {
               >
                 <TouchableOpacity>
                   <Text
-                    style={{ color: "#fff", textDecorationLine: "underline" }}
+                    style={{ color: "#222", textDecorationLine: "underline" }}
                     onPress={() => navigation.navigate("Register")}
                   >
                     Don't have an account? Register Now
@@ -269,7 +324,7 @@ const Login = (props) => {
           bottom: 0,
           zIndex: -1,
         }}
-        xml={backgrounds.tornado}
+        xml={backgrounds.squares}
       />
     </KeyboardAvoidingView>
   );

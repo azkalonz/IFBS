@@ -49,6 +49,12 @@ export default class App extends Component {
         priority: "max",
         vibrate: [0, 250, 250, 250],
       });
+      Notifications.createChannelAndroidAsync("note", {
+        name: "New Note",
+        sound: true,
+        priority: "max",
+        vibrate: [0, 250, 250, 250],
+      });
     }
   };
 
@@ -67,7 +73,7 @@ export default class App extends Component {
     return (
       <Provider store={store}>
         <PaperProvider theme={theme}>
-          <StatusBar translucent backgroundColor={"#0f3613"} />
+          <StatusBar translucent={true} />
           <Navigator />
         </PaperProvider>
       </Provider>

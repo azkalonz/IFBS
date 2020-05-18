@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "IFBS",
+    "name": "Food Caravan",
     "sdkVersion": "37.0.0",
     "slug": "IFBS",
     "platforms": ["ios", "android", "web"],

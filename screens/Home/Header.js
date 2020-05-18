@@ -54,35 +54,37 @@ const Header = (props) => {
             navigation.navigate("Cart");
           }}
         />
-        <View
-          pointerEvents="none"
-          style={{
-            backgroundColor: "red",
-            paddingHorizontal: 5,
-            borderRadius: 999,
-            position: "absolute",
-            bottom: 0,
-            width: 33,
-            alignItems: "center",
-            justifyContent: "center",
-            height: 33,
-            right: 0,
-            borderWidth: 3,
-            borderColor: "#9cc637",
-          }}
-        >
-          <Subheading
+        {Object.keys(props.cartItems).length ? (
+          <View
+            pointerEvents="none"
             style={{
-              fontWeight: "bold",
-              color: "#fff",
-              fontSize: Object.keys(props.cartItems).length > 99 ? 9 : 14,
+              backgroundColor: "red",
+              paddingHorizontal: 5,
+              borderRadius: 999,
+              position: "absolute",
+              bottom: 0,
+              width: 33,
+              alignItems: "center",
+              justifyContent: "center",
+              height: 33,
+              right: 0,
+              borderWidth: 3,
+              borderColor: "#9cc637",
             }}
           >
-            {Object.keys(props.cartItems).length > 99
-              ? "99+"
-              : Object.keys(props.cartItems).length}
-          </Subheading>
-        </View>
+            <Subheading
+              style={{
+                fontWeight: "bold",
+                color: "#fff",
+                fontSize: Object.keys(props.cartItems).length > 99 ? 9 : 14,
+              }}
+            >
+              {Object.keys(props.cartItems).length > 99
+                ? "99+"
+                : Object.keys(props.cartItems).length}
+            </Subheading>
+          </View>
+        ) : null}
       </View>
     </LinearGradient>
   );

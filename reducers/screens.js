@@ -9,6 +9,8 @@ const screens = (
       return { ...state, direction: action.direction };
     case "SET_NOTIFICATION_TOKEN":
       return { ...state, notification_token: action.token };
+    case "CLEAR_NOTIFICATION":
+      return { ...state, notifications: [] };
     case "SET_NOTIFICATION":
       let newData = action.notification.data;
       for (let i = 0; i < state.notifications.length; i++) {

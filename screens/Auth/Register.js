@@ -205,7 +205,7 @@ const Register = (props) => {
             <View>
               <View
                 style={{
-                  backgroundColor: "rgba(255,255,255,0.8)",
+                  backgroundColor: "rgba(0,0,0,0.05)",
                   padding: 30,
                   borderRadius: 30,
                 }}
@@ -304,7 +304,7 @@ const Register = (props) => {
           bottom: 0,
           zIndex: -1,
         }}
-        xml={backgrounds.vortex}
+        xml={backgrounds.squares}
       />
     </KeyboardAvoidingView>
   );

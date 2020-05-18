@@ -12,10 +12,12 @@ import {
 } from "react-native-paper";
 import ActivityLoader from "../../components/ActivityIndicator";
 import WooCommerceApi from "../../components/WooCommerce";
+import { StackActions, NavigationActions } from "react-navigation";
 
 const Cart = (props) => {
-  const [accordions, setAccordions] = useState([true, false]);
+  const [accordions, setAccordions] = useState([true, true, false]);
   const [total, setTotal] = useState(0);
+  const [cart, setCart] = useState();
   const [subTotal, setSubTotal] = useState(0);
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -27,13 +29,36 @@ const Cart = (props) => {
       Object.keys(props.cartItems).forEach(
         (tt) => (t += props.cartItems[tt].price * props.cartItems[tt].qty)
       );
-      setSubTotal(t);
+      setSubTotal(t.toFixed(2));
       t -= couponDiscount.amount ? parseFloat(couponDiscount.amount) : 0;
       t = t < 0 ? 0 : t;
-      setTotal(t);
+      setTotal(t.toFixed(2));
+      let cart = {
+        customer_id: props.userInfo.id,
+        payment_method: "cod",
+        payment_method_title: "cash on delivery",
+        set_paid: false,
+        discount_total: couponDiscount.amount ? couponDiscount.amount : 0,
+        billing: props.userInfo.billing,
+        shipping: props.userInfo.shipping,
+        line_items: Object.keys(props.cartItems).map((k) => ({
+          product_id: props.cartItems[k].id,
+          quantity: props.cartItems[k].qty,
+        })),
+      };
+      if (couponDiscount.amount) {
+        cart.coupon_lines = [
+          {
+            id: couponDiscount.id,
+            code: couponDiscount.code,
+            discount: couponDiscount.amount,
+          },
+        ];
+      }
+      setCart(cart);
       setLoading(false);
     }
-  }, [props.cartItems, couponDiscount]);
+  }, [props.cartItems, couponDiscount, props.userInfo.billing]);
   const CartItem = (p) => {
     return (
       <View
@@ -115,6 +140,13 @@ const Cart = (props) => {
   };
   const handleCoupon = async () => {
     setLoading(true);
+    if (cart.coupon_lines) {
+      alert(
+        "One voucher per order only. Please remove the other voucher code."
+      );
+      setLoading(false);
+      return;
+    }
     let res = await new WooCommerceApi(props.userInfo.jwt_token)
       .get("coupons?code=" + coupon)
       .then((resp) => resp);
@@ -126,37 +158,47 @@ const Cart = (props) => {
   };
   const handleCheckout = async () => {
     setLoading(true);
-    let cart = {
-      payment_method: "cod",
-      payment_method_title: "cash on delivery",
-      set_paid: false,
-      discount_total: couponDiscount.amount ? couponDiscount.amount : 0,
-      line_items: Object.keys(props.cartItems).map((k) => ({
-        product_id: props.cartItems[k].id,
-        quantity: props.cartItems[k].qty,
-      })),
-    };
-    if (couponDiscount.amount) {
-      cart.coupon_lines = [
-        {
-          id: couponDiscount.id,
-          code: couponDiscount.code,
-          discount: couponDiscount.amount,
-        },
-      ];
+    if (
+      props.userInfo.billing === undefined ||
+      !props.userInfo.billing.phone ||
+      !props.userInfo.billing.address_1
+    ) {
+      alert("Please add a valid contact info");
+      setLoading(false);
+      return;
     }
-    props.navigation.navigate("Checkout", cart);
+    console.log(cart);
+    let r = await new WooCommerceApi(props.userInfo.jwt_token).post(
+      "orders",
+      cart
+    );
+    if (r.order_key !== undefined) {
+      props.removeAllFromCart();
+      const resetAction = StackActions.reset({
+        index: 1,
+        actions: [
+          NavigationActions.navigate({ routeName: "Shop" }),
+          NavigationActions.navigate({ routeName: "Orders" }),
+        ],
+      });
+      props.navigation.dispatch(resetAction);
+    } else {
+      alert("Something went wrong, please try again later.");
+      setLoading(false);
+      return;
+    }
     setLoading(false);
   };
   return (
     <View>
       <ActivityLoader visible={loading} offset={60} />
-      <ScrollView style={{ marginBottom: 40 }}>
+      <ScrollView style={{ paddingHorizontal: 18 }}>
         <List.Accordion
           title="ITEMS"
           id="1"
           expanded={accordions[0]}
           onPress={() => handleAccordion(0)}
+          style={{ backgroundColor: "#fff" }}
         >
           {Object.keys(props.cartItems) &&
             Object.keys(props.cartItems).map((i) => (
@@ -166,25 +208,75 @@ const Cart = (props) => {
         <Divider />
 
         <List.Accordion
-          title="COUPON CODE"
+          title="CONTACT INFO"
           id="1"
           expanded={accordions[1]}
           onPress={() => handleAccordion(1)}
+          style={{ backgroundColor: "#fff" }}
         >
-          <View style={{ padding: 13 }}>
-            <TextInput
-              value={coupon}
-              mode="outlined"
-              label="Enter Coupon Code"
-              onChangeText={(val) => setCoupon(val)}
-            />
-            <Button mode="contained" onPress={handleCoupon}>
-              Apply Coupon
-            </Button>
+          <View style={{ padding: 13, backgroundColor: "#fff" }}>
+            {props.userInfo.billing &&
+            props.userInfo.billing.first_name &&
+            props.userInfo.billing.address_1 &&
+            props.userInfo.billing.phone ? (
+              <View>
+                <Text
+                  style={{ fontWeight: "bold", fontSize: 18 }}
+                  numberOfLines={1}
+                >
+                  {props.userInfo.billing.first_name +
+                    " " +
+                    props.userInfo.billing.last_name}
+                </Text>
+                <Text style={{ fontSize: 18 }}>
+                  {props.userInfo.billing.address_1}
+                </Text>
+                <Button
+                  icon="pencil"
+                  onPress={() => props.navigation.navigate("Contact Info")}
+                >
+                  Edit
+                </Button>
+              </View>
+            ) : (
+              <Button
+                icon="plus"
+                onPress={() => props.navigation.navigate("Contact Info")}
+              >
+                Add contact info
+              </Button>
+            )}
           </View>
         </List.Accordion>
         <Divider />
-        <View style={{ padding: 13 }}>
+        <List.Accordion
+          title="DO YOU HAVE A VOUCHER?"
+          id="1"
+          expanded={accordions[2]}
+          onPress={() => handleAccordion(2)}
+          style={{ backgroundColor: "#fff" }}
+        >
+          <View style={{ padding: 13, backgroundColor: "#fff" }}>
+            <TextInput
+              value={coupon}
+              mode="outlined"
+              label="Enter Voucher Code"
+              onChangeText={(val) => setCoupon(val)}
+            />
+            <Button mode="contained" onPress={handleCoupon}>
+              Apply
+            </Button>
+          </View>
+        </List.Accordion>
+
+        <View
+          style={{
+            padding: 13,
+            backgroundColor: "#fff",
+            marginTop: 13,
+            borderRadius: 13,
+          }}
+        >
           <View
             style={{ flexDirection: "row", justifyContent: "space-between" }}
           >
@@ -195,13 +287,48 @@ const Cart = (props) => {
           <View
             style={{ flexDirection: "row", justifyContent: "space-between" }}
           >
-            <Title>Coupon</Title>
+            <Title>Voucher</Title>
             <Title>
               {parseFloat(couponDiscount.amount)
                 ? parseFloat(couponDiscount.amount)
                 : 0}
             </Title>
           </View>
+          {cart && cart.coupon_lines && (
+            <View style={{ paddingLeft: 20 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Text style={{ fontSize: 18, textTransform: "uppercase" }}>
+                    {cart.coupon_lines[0].code}
+                  </Text>
+                  <IconButton
+                    icon="close"
+                    style={{ backgroundColor: "red" }}
+                    color="#fff"
+                    onPress={() => {
+                      setCouponDiscount({ ...couponDiscount, amount: 0 });
+                      setCart(() => {
+                        let c = { ...cart };
+                        delete c.coupon_lines;
+                        return c;
+                      });
+                    }}
+                    size={13}
+                  />
+                </View>
+                <Text>
+                  {parseFloat(couponDiscount.amount)
+                    ? parseFloat(couponDiscount.amount)
+                    : 0}
+                </Text>
+              </View>
+            </View>
+          )}
           <Divider />
           <View
             style={{ flexDirection: "row", justifyContent: "space-between" }}
@@ -210,25 +337,17 @@ const Cart = (props) => {
             <Title>{total}</Title>
           </View>
         </View>
+        <View style={{ marginTop: 13 }}>
+          <Button
+            mode="contained"
+            icon="lock"
+            onPress={handleCheckout}
+            disabled={Object.keys(props.cartItems).length ? false : true}
+          >
+            Place order ({total})
+          </Button>
+        </View>
       </ScrollView>
-      <View
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 10,
-        }}
-      >
-        <Button
-          mode="contained"
-          icon="lock"
-          onPress={handleCheckout}
-          disabled={Object.keys(props.cartItems).length ? false : true}
-        >
-          Checkout
-        </Button>
-      </View>
     </View>
   );
 };

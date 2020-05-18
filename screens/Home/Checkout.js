@@ -20,10 +20,8 @@ const Checkout = (props) => {
   const [accordions, setAccordions] = useState([true, false]);
   const [shipping, setShipping] = useState(null);
   const [billing, setBilling] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
-    if (!props.navigation.state.params.line_items.length)
-      props.navigation.navigate("Cart");
     if (shipping === null) getUserShipping();
   });
   const getUserShipping = async () => {
@@ -31,6 +29,7 @@ const Checkout = (props) => {
       "customers/" + props.userInfo.id
     );
     setLoading(false);
+    props.setUserInfo({ billing: r.billing, shipping: r.shipping });
     setBilling(r.billing);
     setShipping(r.shipping);
   };
@@ -66,27 +65,36 @@ const Checkout = (props) => {
   ];
   const handleCheckout = async () => {
     setLoading(true);
-    let r = await new WooCommerceApi(props.userInfo.jwt_token).post("orders", {
-      ...props.navigation.state.params,
-      customer_id: props.userInfo.id,
-      shipping,
-      billing,
-    });
-    if (r.order_key !== undefined) {
-      props.removeAllFromCart();
-      const resetAction = StackActions.reset({
-        index: 1,
-        actions: [
-          NavigationActions.navigate({ routeName: "Shop" }),
-          NavigationActions.navigate({ routeName: "Orders" }),
-        ],
+    // let r = await new WooCommerceApi(props.userInfo.jwt_token).post("orders", {
+    //   ...props.navigation.state.params,
+    //   customer_id: props.userInfo.id,
+    //   shipping,
+    //   billing,
+    // });
+    let b = await new WooCommerceApi(props.userInfo.jwt_token)
+      .post("customers/" + props.userInfo.id, {
+        billing,
+      })
+      .then((resp) => {
+        setLoading(false);
+        props.setUserInfo({ billing: resp.billing, shipping: resp.shipping });
+        props.navigation.goBack();
       });
-      props.navigation.dispatch(resetAction);
-    } else {
-      alert("Something went wrong, please try again later.");
-      setLoading(false);
-      return;
-    }
+    // if (r.order_key !== undefined) {
+    //   props.removeAllFromCart();
+    //   const resetAction = StackActions.reset({
+    //     index: 1,
+    //     actions: [
+    //       NavigationActions.navigate({ routeName: "Shop" }),
+    //       NavigationActions.navigate({ routeName: "Orders" }),
+    //     ],
+    //   });
+    //   props.navigation.dispatch(resetAction);
+    // } else {
+    //   alert("Something went wrong, please try again later.");
+    //   setLoading(false);
+    //   return;
+    // }
   };
   return (
     <KeyboardAvoidingView>
@@ -94,7 +102,7 @@ const Checkout = (props) => {
       <ScrollView style={{ marginBottom: 40 }}>
         <View>
           <List.Accordion
-            title="BILLING DETAILS"
+            title="CONTACT INFO"
             id="1"
             expanded={accordions[0]}
             onPress={() =>
@@ -116,7 +124,7 @@ const Checkout = (props) => {
             >
               {billing_fields.map((field) => (
                 <TextInput
-                  mode="outlined"
+                  mode="flat"
                   style={
                     field.style
                       ? { ...field.style, marginVertical: 7 }
@@ -188,7 +196,7 @@ const Checkout = (props) => {
           onPress={handleCheckout}
           disabled={loading ? true : false}
         >
-          Proceed
+          Done
         </Button>
       </View>
     </KeyboardAvoidingView>

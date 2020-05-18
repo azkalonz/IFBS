@@ -3,25 +3,26 @@ import { View, Text, FlatList, StatusBar } from "react-native";
 import {
   ScrollView,
   TouchableNativeFeedback,
+  TouchableOpacity,
 } from "react-native-gesture-handler";
 import { connect } from "react-redux";
 import { List, Title, Avatar, Divider, Searchbar } from "react-native-paper";
-
+import WooCommerceApi from "../../components/WooCommerce";
 const STATUS_BAR = StatusBar.statusBarHeight || 24;
 
 const Search = (props) => {
   const [searchItem, setSearchItem] = useState("");
+  const [searchResult, setSearchResult] = useState();
+  const [loading, setLoading] = useState(false);
   const searchBarRef = useRef();
   const ResultItem = (item) => {
     let pic = item.images[0].src;
     return (
       <View>
-        <TouchableNativeFeedback
-        // onPress={() => {
-        //   props.navigation.navigate("Product", {
-        //     slug: item.slug,
-        //   });
-        // }}
+        <TouchableOpacity
+          onPress={() => {
+            props.navigation.navigate("Product", item);
+          }}
         >
           <List.Item
             title={item.name}
@@ -36,7 +37,7 @@ const Search = (props) => {
               />
             )}
           />
-        </TouchableNativeFeedback>
+        </TouchableOpacity>
         <Divider />
       </View>
     );
@@ -44,6 +45,17 @@ const Search = (props) => {
   useEffect(() => {
     setTimeout(() => searchBarRef.current.focus(), 500);
   }, [searchBarRef]);
+  useEffect(() => {
+    if (searchItem.length > 0) {
+      setLoading(true);
+      new WooCommerceApi(props.userInfo.jwt_token)
+        .get("products?search=" + searchItem)
+        .then((resp) => {
+          setLoading(false);
+          setSearchResult(resp);
+        });
+    }
+  }, [searchItem]);
   return (
     <View>
       <Searchbar
@@ -52,13 +64,19 @@ const Search = (props) => {
         ref={searchBarRef}
         onChangeText={(val) => setSearchItem(val)}
       />
-      <FlatList
-        data={props.products.filter(
-          (product) => JSON.stringify(product).indexOf(searchItem) >= 0
+      {searchResult && (
+        <FlatList
+          data={searchResult}
+          renderItem={({ item }) => <ResultItem {...item} />}
+          keyExtractor={(item) => item.id}
+        />
+      )}
+      <View style={{ padding: 13 }}>
+        {searchResult && searchResult.length === 0 && (
+          <Text>No result for {searchItem}</Text>
         )}
-        renderItem={({ item }) => <ResultItem {...item} />}
-        keyExtractor={(item) => item.id}
-      />
+        {loading && <Text>Searching...</Text>}
+      </View>
     </View>
   );
 };
@@ -66,6 +84,7 @@ const Search = (props) => {
 const mapStateToProps = (states) => {
   return {
     products: states.products,
+    userInfo: states.userInfo,
   };
 };
 

@@ -26,10 +26,6 @@ class Drawer extends Component {
     this.first_name = props.userInfo.first_name;
     this.email = props.userInfo.email;
     this.navigate = props.navigation.navigate;
-    this.categories = props.products
-      .filter((i) => i.status === "publish")
-      .map((product) => product.categories[0].name)
-      .filter((c, i, s) => s.indexOf(c) === i);
   }
   _getCustomer = async () => {
     let customer = await new WooCommerceApi(this.props.userInfo.jwt_token).get(
@@ -111,7 +107,10 @@ class Drawer extends Component {
               />
             </View>
           </TouchableOpacity>
-          <Categories items={this.categories} />
+          <Categories
+            items={this.props.categories}
+            onPress={(c) => this.navigate("ProductsByStore", c)}
+          />
           <TouchableOpacity>
             <List.Item
               title="Shop"
@@ -136,7 +135,10 @@ class Drawer extends Component {
           <Divider />
           <List.Item
             title="My Orders"
-            onPress={() => this.navigate("Orders")}
+            onPress={() => {
+              this.props.clearNotifications();
+              this.navigate("Orders");
+            }}
             right={() => this.NotificationCounter({ name: "order" })}
             left={(props) => <ShoppingBag width={30} height={30} {...props} />}
           />
@@ -155,6 +157,7 @@ export default connect(
     userInfo: states.userInfo,
     notifications: states.screens.notifications,
     products: states.products,
+    categories: states.categories,
   }),
   rootDispatch
 )(Drawer);
